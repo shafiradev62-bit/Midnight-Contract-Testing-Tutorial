@@ -1,79 +1,74 @@
-# Midnight Contract Testing Tutorial
+# Panduan Testing Kontrak Midnight! 🚀
 
-A comprehensive tutorial and working code repository for testing Midnight Compact contracts, including unit tests, assertions, local simulation, and GitHub Actions CI.
+Halo! Ini adalah panduan lengkap buat kamu yang pengen belajar testing kontrak Compact di jaringan Midnight dengan mudah dan terstruktur.
 
-This repository is a submission for the Midnight Network bounty: [Tutorial: Testing Compact Contracts: Unit Tests, Assertions, and Local Simulation](https://github.com/midnightntwrk/contributor-hub/issues/312)
+Repo ini dibuat untuk mengikuti bounty dari Midnight Network: [Tutorial: Testing Compact Contracts](https://github.com/midnightntwrk/contributor-hub/issues/312)
 
-## Features
+## Apa yang Ada di Sini? 📦
 
-- **Contract Simulator**: Local simulation of Compact contract logic for fast testing
-- **Comprehensive Test Suite**: Unit tests with Vitest for circuit calls and ledger state verification
-- **GitHub Actions CI**: Automated testing pipeline for every commit and PR
-- **TypeScript Support**: Full TypeScript integration for type-safe development
-- **Test Isolation**: Fresh contract state for every test
+- **Simulator Kontrak**: Alat buat ngetes logika kontrak secara lokal tanpa harus deploy!
+- **Tes Otomatis**: Pakai Vitest buat testing yang cepat dan terpercaya
+- **CI/CD Otomatis**: GitHub Actions yang ngerun tes setiap kamu ngirim perubahan
+- **TypeScript**: Biar kodenya lebih aman dan mudah dipahami
+- **Contoh Kode**: Ada contoh kontrak token sederhana beserta tesnya!
 
-## Prerequisites
+## Yang Kamu Butuhkan 📋
 
-- Node.js 18+
-- npm or yarn
+- Node.js versi 18 ke atas
+- npm (atau yarn)
+- Teks editor kesayanganmu!
 
-## Quick Start
+## Cara Mulai Cepat! ⚡
 
 ```bash
-# 1. Clone the repository
+# 1. Download repo ini
 git clone https://github.com/shafiradev62-bit/Midnight-Contract-Testing-Tutorial.git
 cd Midnight-Contract-Testing-Tutorial
 
-# 2. Install dependencies
+# 2. Install semua yang dibutuhkan
 npm install
 
-# 3. Run the test suite
+# 3. Jalanin tes buat lihat apakah semua berjalan
 npm test
 
-# 4. Run tests in watch mode (development)
+# 4. Kalo mau develop, pake mode watch
 npm run dev
 
-# 5. Check test coverage
+# 5. Lihat seberapa banyak kode yang ke-tes
 npm run test:coverage
-
-# 6. Build the project
-npm run build
 ```
 
-## Repository Structure
+## Isi Repo 📁
 
 ```
 midnight-contract-testing-tutorial/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml          # GitHub Actions CI configuration
+│       └── ci.yml          # Settingan GitHub Actions
 ├── src/
-│   └── contract-simulator.ts  # Contract simulator implementation
+│   └── contract-simulator.ts  # Kode simulator kontrak
 ├── tests/
-│   └── contract-simulator.test.ts  # Test suite
-├── TUTORIAL_DRAFT.md       # Full tutorial draft
-├── package.json
-├── tsconfig.json
-├── vitest.config.ts
-└── README.md
+│   └── contract-simulator.test.ts  # Kode tes
+├── TUTORIAL_DRAFT.md       # Panduan lengkapnya!
+├── README.md
+└── ... file lain
 ```
 
-## Tutorial
+## Panduan Lengkapnya 📖
 
-The full step-by-step tutorial is available in [TUTORIAL_DRAFT.md](./TUTORIAL_DRAFT.md), covering:
+Baca [TUTORIAL_DRAFT.md](./TUTORIAL_DRAFT.md) buat panduan langkah demi langkah tentang:
+1. Setting proyek dari awal
+2. Bikin simulator kontrak sendiri
+3. Nulis tes yang bagus
+4. Ngeset GitHub Actions biar otomatis
 
-1. Project setup and tooling installation
-2. Building a contract simulator
-3. Writing unit tests with Vitest
-4. Testing edge cases
-5. Setting up GitHub Actions CI
+## Info Penting 📌
 
-## Bounty Submission
+- Repo: https://github.com/shafiradev62-bit/Midnight-Contract-Testing-Tutorial
+- Bounty: https://github.com/midnightntwrk/contributor-hub/issues/312
 
-- **Code Repository**: https://github.com/shafiradev62-bit/Midnight-Contract-Testing-Tutorial
-- **Tutorial**: [TUTORIAL_DRAFT.md](./TUTORIAL_DRAFT.md)
-- **Issue Reference**: https://github.com/midnightntwrk/contributor-hub/issues/312
+Selamat belajar dan semoga berhasil! 🎉
 
-## License
+## Lisensi
 
 MIT

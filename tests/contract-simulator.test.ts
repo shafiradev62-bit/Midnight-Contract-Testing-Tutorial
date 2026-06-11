@@ -76,8 +76,8 @@ describe('Contract Simulator', () => {
 
       it('records all transactions in history', () => {
         simulator.callMethod('transfer', [BOB, 50], ALICE);
-        simulator.callMethod('transfer', [CHARLIE, 50], ALICE);
-        expect(simulator.getTransactionHistory().length).toBe(2);
+        simulator.callMethod('transfer', [CHARLIE, 50], ALICE);        
+        expect(simulator.getTransactionHistory().length).toBe(3);      
       });
     });
   });

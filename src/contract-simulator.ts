@@ -17,7 +17,7 @@ export class ContractSimulator {
 
   constructor(contractCode: any, initialState: LedgerState = {}) {
     this.#contractCode = contractCode;
-    this.#state = Object.freeze ? Object.freeze({ ...initialState }) : { ...initialState };
+    this.#state = { ...initialState };
     this.#transactionHistory = [];
   }
 

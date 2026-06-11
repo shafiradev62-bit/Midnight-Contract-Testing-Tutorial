@@ -1,74 +1,78 @@
-# Panduan Testing Kontrak Midnight! 🚀
+# Midnight Compact Contract Testing Framework
 
-Halo! Ini adalah panduan lengkap buat kamu yang pengen belajar testing kontrak Compact di jaringan Midnight dengan mudah dan terstruktur.
+A production-ready testing framework and tutorial for Midnight Network Compact contracts. This repository provides a comprehensive implementation of unit testing, local simulation, and automated CI/CD pipelines for Compact contract development.
 
-Repo ini dibuat untuk mengikuti bounty dari Midnight Network: [Tutorial: Testing Compact Contracts](https://github.com/midnightntwrk/contributor-hub/issues/312)
+This submission is for the Midnight Network bounty: [Tutorial: Testing Compact Contracts: Unit Tests, Assertions, and Local Simulation](https://github.com/midnightntwrk/contributor-hub/issues/312)
 
-## Apa yang Ada di Sini? 📦
+## Key Features
 
-- **Simulator Kontrak**: Alat buat ngetes logika kontrak secara lokal tanpa harus deploy!
-- **Tes Otomatis**: Pakai Vitest buat testing yang cepat dan terpercaya
-- **CI/CD Otomatis**: GitHub Actions yang ngerun tes setiap kamu ngirim perubahan
-- **TypeScript**: Biar kodenya lebih aman dan mudah dipahami
-- **Contoh Kode**: Ada contoh kontrak token sederhana beserta tesnya!
+- Local Contract Simulation: High-fidelity simulation of Compact contract state transitions
+- Comprehensive Test Suite: Extensive unit testing with Vitest, covering edge cases and failure modes
+- GitHub Actions CI: Automated testing and type checking on every commit and pull request
+- Type-Safe: Full TypeScript implementation for type safety and better IDE support
+- Test Isolation: Fresh state initialization for each test execution
+- State Immutability: Deep cloning to prevent accidental state mutations
 
-## Yang Kamu Butuhkan 📋
+## Prerequisites
 
-- Node.js versi 18 ke atas
-- npm (atau yarn)
-- Teks editor kesayanganmu!
+- Node.js >= 18.0.0
+- npm or Yarn package manager
+- Basic TypeScript knowledge
 
-## Cara Mulai Cepat! ⚡
+## Quick Start
 
 ```bash
-# 1. Download repo ini
+# Clone the repository
 git clone https://github.com/shafiradev62-bit/Midnight-Contract-Testing-Tutorial.git
 cd Midnight-Contract-Testing-Tutorial
 
-# 2. Install semua yang dibutuhkan
+# Install dependencies
 npm install
 
-# 3. Jalanin tes buat lihat apakah semua berjalan
+# Execute test suite
 npm test
 
-# 4. Kalo mau develop, pake mode watch
+# Run tests in watch mode for development
 npm run dev
 
-# 5. Lihat seberapa banyak kode yang ke-tes
+# Generate test coverage report
 npm run test:coverage
+
+# Build the project
+npm run build
 ```
 
-## Isi Repo 📁
+## Repository Structure
 
 ```
 midnight-contract-testing-tutorial/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml          # Settingan GitHub Actions
+│       └── ci.yml          # CI/CD Pipeline Configuration
 ├── src/
-│   └── contract-simulator.ts  # Kode simulator kontrak
+│   └── contract-simulator.ts  # Contract Simulator Implementation
 ├── tests/
-│   └── contract-simulator.test.ts  # Kode tes
-├── TUTORIAL_DRAFT.md       # Panduan lengkapnya!
-├── README.md
-└── ... file lain
+│   └── contract-simulator.test.ts  # Test Suite with 24 Comprehensive Tests
+├── TUTORIAL_DRAFT.md       # Complete Tutorial Documentation
+├── package.json
+├── tsconfig.json
+├── vitest.config.ts
+├── LICENSE
+└── README.md
 ```
 
-## Panduan Lengkapnya 📖
+## Tutorial Documentation
 
-Baca [TUTORIAL_DRAFT.md](./TUTORIAL_DRAFT.md) buat panduan langkah demi langkah tentang:
-1. Setting proyek dari awal
-2. Bikin simulator kontrak sendiri
-3. Nulis tes yang bagus
-4. Ngeset GitHub Actions biar otomatis
+The step-by-step tutorial can be found in [TUTORIAL_DRAFT.md](./TUTORIAL_DRAFT.md), covering:
 
-## Info Penting 📌
+1. Project initialization and tooling installation
+2. Building the contract simulator
+3. Writing unit tests and testing edge cases
+4. Setting up GitHub Actions for automated testing
+5. Best practices for contract testing
 
-- Repo: https://github.com/shafiradev62-bit/Midnight-Contract-Testing-Tutorial
-- Bounty: https://github.com/midnightntwrk/contributor-hub/issues/312
+## Submission Information
 
-Selamat belajar dan semoga berhasil! 🎉
-
-## Lisensi
-
-MIT
+- **Code Repository**: https://github.com/shafiradev62-bit/Midnight-Contract-Testing-Tutorial
+- **Tutorial**: [TUTORIAL_DRAFT.md](./TUTORIAL_DRAFT.md)
+- **Issue Reference**: https://github.com/midnightntwrk/contributor-hub/issues/312

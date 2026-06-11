@@ -1,558 +1,417 @@
-# How to Test Midnight Compact Contracts Like a Pro
+# Testing Midnight Compact Contracts: A Comprehensive Guide
 
-## Introduction
+## Abstract
 
-The first Compact contract I wrote on Midnight was much simpler in my head than it was in reality.
+This guide outlines a complete methodology for testing Midnight Compact contracts. We cover setting up a local development environment, building a contract simulator, writing comprehensive unit tests, and implementing an automated CI/CD pipeline using GitHub Actions. The approach balances speed of development with robustness, ensuring that contract logic is thoroughly validated before deployment.
 
-At first, everything seemed fine. The contract compiled, the logic looked correct, and the output matched what I expected. But after adding a few more features, I started noticing something familiar: every small change created a new opportunity to break something else.
+## 1. Introduction
 
-I found myself repeatedly running the same checks manually.
+Testing smart contracts is a critical component of blockchain development. Given the immutable nature of deployed contracts, identifying and fixing issues before deployment is essential to prevent financial losses and security vulnerabilities. This guide provides a step-by-step approach to building a testing framework for Midnight Compact contracts.
 
-Did minting still work?
+## 2. Prerequisites
 
-Did transfers still update balances correctly?
+Before proceeding, ensure the following tools are installed and configured:
 
-Did edge cases still behave as expected?
+- Node.js (version 18 or higher)
+- npm or Yarn package manager
+- A code editor (e.g., VS Code) with TypeScript support
+- Basic familiarity with TypeScript and smart contract concepts
 
-After doing this for a few days, it became obvious that I needed a better approach.
+## 3. Project Setup
 
-That's when I started building a local testing setup.
+### 3.1 Initialize Project
 
-Instead of deploying or relying on a full environment every time I wanted to verify contract logic, I created a simple simulator in TypeScript that behaved similarly to a Compact contract. Then I added automated tests with Vitest and connected everything to GitHub Actions so tests would run automatically whenever I pushed code.
-
-The setup turned out to be much simpler than I expected, and it immediately improved my development workflow.
-
-In this guide, I'll show you exactly how I built it, what mistakes I made along the way, and how you can create your own testing pipeline for Compact contracts.
-
-By the end, you'll have a local simulator, automated tests, and a CI workflow that helps catch problems before they ever reach production.
-
----
-
-## Prerequisites
-
-Before we start, make sure you have a few things installed.
-
-You'll need:
-
-* Node.js 18 or newer
-* npm
-* A code editor (I use VS Code)
-* Basic JavaScript or TypeScript knowledge
-
-You don't need to be an expert in testing frameworks or blockchain development to follow along. If you've written a few JavaScript functions before, you'll be fine.
-
-I also recommend spending a little time with Midnight's documentation if you're completely new to Compact contracts. Understanding how contract state works will make the testing examples much easier to understand.
-
-To verify your Node installation, run:
+Create a new directory and initialize an npm project:
 
 ```bash
-node --version
-npm --version
-```
-
-You should see something similar to:
-
-```bash
-v20.11.0
-10.2.4
-```
-
-Once that's ready, we can start building our project.
-
----
-
-## Setting Up Our Project
-
-I like starting with a clean structure because it makes everything easier later.
-
-Create a new project folder:
-
-```bash
-mkdir midnight-testing
-cd midnight-testing
-```
-
-Initialize the project:
-
-```bash
+mkdir midnight-contract-testing
+cd midnight-contract-testing
 npm init -y
 ```
 
-Now install the tools we'll need:
+### 3.2 Install Dependencies
+
+Install the necessary development dependencies:
 
 ```bash
-npm install -D typescript vitest ts-node @types/node
+npm install -D typescript vitest ts-node @types/node @vitest/coverage-v8
 ```
 
-After installation, update your `package.json` scripts:
+### 3.3 Configure TypeScript
 
-```json
-{
-  "scripts": {
-    "build": "tsc",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  }
-}
-```
-
-Next, create a TypeScript configuration file.
-
-```bash
-npx tsc --init
-```
-
-Replace the generated content with:
+Create a `tsconfig.json` file:
 
 ```json
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2022",
     "module": "CommonJS",
-    "moduleResolution": "Node",
+    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "rootDir": "./src",
     "strict": true,
-    "types": ["vitest/globals", "node"],
-    "outDir": "./dist"
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "sourceMap": true,
+    "moduleResolution": "node"
   },
-  "include": ["src", "tests"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "tests"]
 }
 ```
 
-One mistake I made the first time was forgetting to add `"vitest/globals"`.
+### 3.4 Configure Vitest
 
-The tests actually worked, but my editor showed errors everywhere because TypeScript couldn't recognize functions like `describe()`, `it()`, and `expect()`.
+Create `vitest.config.ts`:
 
-Adding the Vitest types fixed everything immediately.
-
-Now create a Vitest configuration file called `vitest.config.ts`.
-
-```ts
+```typescript
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
     globals: true,
-    environment: "node"
+    environment: "node",
+    include: ["tests/**/*.test.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json", "html"],
+      include: ["src/**/*.ts"],
+      exclude: ["src/**/*.d.ts"]
+    }
   }
 });
 ```
 
-Finally, create the folder structure:
+### 3.5 Update package.json Scripts
 
-```text
-midnight-testing/
-├── src/
-├── tests/
-├── package.json
-├── tsconfig.json
-└── vitest.config.ts
-```
+Modify `package.json` to include the following scripts:
 
-With the project ready, we can move on to the part that actually makes testing easy.
-
----
-
-## Building Our Contract Simulator
-
-When I first started experimenting with testing, I made a classic mistake.
-
-I tried to recreate every possible feature of a real contract.
-
-Permissions.
-
-Events.
-
-Transaction history.
-
-Complex validation.
-
-The simulator became so complicated that debugging it was harder than debugging the contract itself.
-
-Eventually I realized something important:
-
-The simulator only needs enough functionality to test the logic you're writing.
-
-For this example, we'll build a simple token contract simulator.
-
-Create a file called:
-
-```text
-src/contract-simulator.ts
-```
-
-And add the following code:
-
-```ts
-export class ContractSimulator {
-  private balances: Map<string, number>;
-
-  constructor() {
-    this.balances = new Map();
-  }
-
-  balanceOf(address: string): number {
-    return this.balances.get(address) || 0;
-  }
-
-  mint(address: string, amount: number): void {
-    const currentBalance = this.balanceOf(address);
-
-    this.balances.set(
-      address,
-      currentBalance + amount
-    );
-  }
-
-  transfer(
-    from: string,
-    to: string,
-    amount: number
-  ): boolean {
-    const senderBalance =
-      this.balanceOf(from);
-
-    if (senderBalance < amount) {
-      return false;
-    }
-
-    this.balances.set(
-      from,
-      senderBalance - amount
-    );
-
-    const receiverBalance =
-      this.balanceOf(to);
-
-    this.balances.set(
-      to,
-      receiverBalance + amount
-    );
-
-    return true;
+```json
+{
+  "scripts": {
+    "dev": "vitest",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
   }
 }
 ```
 
-Let's break down what's happening.
+## 4. Building the Contract Simulator
 
-The contract state is represented by a JavaScript `Map`.
+The contract simulator is a key component of this testing framework. It replicates the behavior of a Compact contract in a local environment, allowing for fast and deterministic testing.
 
-```ts
-private balances: Map<string, number>;
+### 4.1 Deep Clone Utility
+
+Implement a deep cloning function to ensure state immutability:
+
+```typescript
+function deepClone<T>(obj: T): T {
+  if (typeof structuredClone !== 'undefined') {
+    return structuredClone(obj);
+  }
+  return JSON.parse(JSON.stringify(obj));
+}
 ```
 
-This allows us to store balances for different users.
+### 4.2 Contract Simulator Class
 
-The `mint()` function increases a user's balance.
+Create `src/contract-simulator.ts`:
 
-```ts
-simulator.mint("alice", 100);
+```typescript
+export interface LedgerState {
+  [key: string]: any;
+}
+
+export interface Transaction {
+  from: string;
+  to: string;
+  value: number;
+  data?: any;
+  timestamp: number;
+}
+
+export class ContractSimulator {
+  #state: LedgerState;
+  #transactionHistory: Transaction[];
+  #contractCode: any;
+
+  constructor(contractCode: any, initialState: LedgerState = {}) {
+    this.#contractCode = contractCode;
+    this.#state = deepClone(initialState);
+    this.#transactionHistory = [];
+  }
+
+  getState(): LedgerState {
+    return deepClone(this.#state);
+  }
+
+  setState(newState: Partial<LedgerState>): void {
+    this.#state = {
+      ...deepClone(this.#state),
+      ...deepClone(newState)
+    };
+  }
+
+  callMethod(methodName: string, args: any[] = [], caller: string = '0x000000000000000000000000000000000000dEaD'): any {
+    if (typeof methodName !== 'string' || methodName.trim() === '') {
+      throw new Error('Invalid method name');
+    }
+    if (!Array.isArray(args)) {
+      throw new Error('Args must be an array');
+    }
+    if (typeof caller !== 'string' || caller.trim() === '') {
+      throw new Error('Invalid caller address');
+    }
+
+    const tx: Transaction = {
+      from: caller,
+      to: 'contract',
+      value: 0,
+      data: { methodName, args: deepClone(args) },
+      timestamp: Date.now()
+    };
+    this.#transactionHistory.push(deepClone(tx));
+
+    switch (methodName) {
+      case 'transfer':
+        return this.#handleTransfer(args, caller);
+      case 'mint':
+        return this.#handleMint(args, caller);
+      case 'balanceOf':
+        return this.#handleBalanceOf(args);
+      default:
+        throw new Error(`Method '${methodName}' not implemented`);
+    }
+  }
+
+  #handleTransfer(args: any[], caller: string): { success: boolean; error?: string } {
+    const [to, amount] = args;
+
+    if (typeof to !== 'string' || to.trim() === '') {
+      return { success: false, error: 'Invalid recipient address' };
+    }
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+      return { success: false, error: 'Invalid amount' };
+    }
+
+    const currentState = deepClone(this.#state);
+    if (!currentState.balances) {
+      currentState.balances = {};
+    }
+
+    const balances = currentState.balances;
+    const senderBalance = balances[caller] || 0;
+
+    if (senderBalance < amount) {
+      return { success: false, error: 'Insufficient balance' };
+    }
+
+    balances[caller] = senderBalance - amount;
+    balances[to] = (balances[to] || 0) + amount;
+    this.#state = currentState;
+
+    return { success: true };
+  }
+
+  #handleMint(args: any[], caller: string): { success: boolean; error?: string } {
+    const [to, amount] = args;
+
+    if (typeof to !== 'string' || to.trim() === '') {
+      return { success: false, error: 'Invalid recipient address' };
+    }
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+      return { success: false, error: 'Invalid amount' };
+    }
+
+    const currentState = deepClone(this.#state);
+    if (!currentState.balances) {
+      currentState.balances = {};
+    }
+
+    const balances = currentState.balances;
+    balances[to] = (balances[to] || 0) + amount;
+    this.#state = currentState;
+
+    return { success: true };
+  }
+
+  #handleBalanceOf(args: any[]): number {
+    const [address] = args;
+    if (typeof address !== 'string') {
+      return 0;
+    }
+    const balances = this.#state.balances || {};
+    return balances[address] || 0;
+  }
+
+  getTransactionHistory(): Transaction[] {
+    return deepClone(this.#transactionHistory);
+  }
+
+  reset(initialState: LedgerState = {}): void {
+    this.#state = deepClone(initialState);
+    this.#transactionHistory = [];
+  }
+}
+
+function deepClone<T>(obj: T): T {
+  if (typeof structuredClone !== 'undefined') {
+    return structuredClone(obj);
+  }
+  return JSON.parse(JSON.stringify(obj));
+}
 ```
 
-After calling that function, Alice owns 100 tokens.
+## 5. Writing Unit Tests
 
-The `transfer()` function performs a simple balance check before moving tokens between accounts.
+Create comprehensive unit tests in `tests/contract-simulator.test.ts`:
 
-```ts
-simulator.transfer(
-  "alice",
-  "bob",
-  50
-);
-```
+```typescript
+import { describe, it, expect, beforeEach } from 'vitest';
+import { ContractSimulator } from '../src/contract-simulator';
 
-If Alice has enough tokens, the transfer succeeds.
+const ALICE = '0x742d35Cc6634C0532925a3b81127179012922666';
+const BOB = '0x60aE616a21558eCa24704686051973696e2427a9';
+const CHARLIE = '0x429d198297323c970196e25a9008350c6357a104';
+const DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD';
 
-If she doesn't, the function returns `false`.
-
-It's intentionally simple, but that's exactly what we want.
-
-A lightweight simulator gives us fast feedback during development.
-
----
-
-## Writing Our First Tests
-
-Now comes my favorite part.
-
-Let's actually verify that the simulator behaves correctly.
-
-Create a new file:
-
-```text
-tests/contract-simulator.test.ts
-```
-
-Add the following code:
-
-```ts
-import {
-  describe,
-  expect,
-  it,
-  beforeEach
-} from "vitest";
-
-import { ContractSimulator }
-from "../src/contract-simulator";
-
-describe("Contract Simulator", () => {
+describe('Contract Simulator', () => {
   let simulator: ContractSimulator;
 
   beforeEach(() => {
-    simulator = new ContractSimulator();
+    simulator = new ContractSimulator({});
   });
 
-  it("starts with zero balance", () => {
-    expect(
-      simulator.balanceOf("alice")
-    ).toBe(0);
+  describe('State Management', () => {
+    it('initializes with empty state', () => {
+      expect(simulator.getState()).toEqual({});
+    });
+
+    it('supports state updates and retrievals', () => {
+      simulator.setState({ owner: ALICE });
+      expect(simulator.getState().owner).toEqual(ALICE);
+    });
+
+    it('resets to initial state correctly', () => {
+      simulator.setState({ owner: ALICE, totalSupply: 1000 });
+      simulator.reset();
+      expect(simulator.getState()).toEqual({});
+    });
+
+    it('returns copies of state to prevent mutation', () => {
+      const state = simulator.getState();
+      state.mutated = 'should not affect internal state';
+      expect(simulator.getState()).toEqual({});
+    });
   });
 
-  it("mints tokens correctly", () => {
-    simulator.mint("alice", 100);
+  describe('Token Operations', () => {
+    describe('Minting', () => {
+      it('mints tokens to specified address', () => {
+        const result = simulator.callMethod('mint', [ALICE, 100], ALICE);
+        expect(result.success).toBe(true);
+        expect(simulator.callMethod('balanceOf', [ALICE])).toBe(100);
+      });
 
-    expect(
-      simulator.balanceOf("alice")
-    ).toBe(100);
-  });
+      it('rejects invalid mint amounts', () => {
+        expect(simulator.callMethod('mint', [ALICE, -100], ALICE).success).toBe(false);
+        expect(simulator.callMethod('mint', [ALICE, 0], ALICE).success).toBe(false);
+        expect(simulator.callMethod('mint', [ALICE, Infinity], ALICE).success).toBe(false);
+      });
+    });
 
-  it("transfers tokens correctly", () => {
-    simulator.mint("alice", 100);
+    describe('Transfers', () => {
+      beforeEach(() => {
+        simulator.callMethod('mint', [ALICE, 200], ALICE);
+      });
 
-    const success =
-      simulator.transfer(
-        "alice",
-        "bob",
-        50
-      );
+      it('transfers tokens between addresses', () => {
+        const result = simulator.callMethod('transfer', [BOB, 100], ALICE);
+        expect(result.success).toBe(true);
+        expect(simulator.callMethod('balanceOf', [ALICE])).toBe(100);
+        expect(simulator.callMethod('balanceOf', [BOB])).toBe(100);
+      });
 
-    expect(success).toBe(true);
-
-    expect(
-      simulator.balanceOf("alice")
-    ).toBe(50);
-
-    expect(
-      simulator.balanceOf("bob")
-    ).toBe(50);
-  });
-
-  it("rejects invalid transfers", () => {
-    simulator.mint("alice", 20);
-
-    const success =
-      simulator.transfer(
-        "alice",
-        "bob",
-        100
-      );
-
-    expect(success).toBe(false);
-
-    expect(
-      simulator.balanceOf("alice")
-    ).toBe(20);
+      it('fails when sender has insufficient balance', () => {
+        const result = simulator.callMethod('transfer', [BOB, 250], ALICE);
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('Insufficient balance');
+      });
+    });
   });
 });
 ```
 
-One lesson I learned very quickly is that tests should never share state.
+## 6. CI/CD Pipeline Configuration
 
-Before I added the `beforeEach()` block, I kept getting strange failures that seemed random.
-
-They weren't random.
-
-One test was accidentally affecting another.
-
-Creating a fresh simulator before every test solved the problem completely.
-
-Run the tests:
-
-```bash
-npm run test
-```
-
-If everything is configured correctly, you'll see output similar to:
-
-```bash
-✓ starts with zero balance
-✓ mints tokens correctly
-✓ transfers tokens correctly
-✓ rejects invalid transfers
-```
-
-Seeing all green checkmarks is surprisingly satisfying.
-
----
-
-## Testing Edge Cases
-
-Basic functionality is important, but edge cases are where bugs usually hide.
-
-For example, what happens if someone tries to transfer more tokens than they own?
-
-We already covered that.
-
-But what about multiple transfers?
-
-Let's add another test:
-
-```ts
-it("handles multiple transfers", () => {
-  simulator.mint("alice", 500);
-
-  simulator.transfer(
-    "alice",
-    "bob",
-    100
-  );
-
-  simulator.transfer(
-    "alice",
-    "charlie",
-    150
-  );
-
-  expect(
-    simulator.balanceOf("alice")
-  ).toBe(250);
-
-  expect(
-    simulator.balanceOf("bob")
-  ).toBe(100);
-
-  expect(
-    simulator.balanceOf("charlie")
-  ).toBe(150);
-});
-```
-
-This type of test catches issues that don't always appear during manual testing.
-
-As your Compact contracts become more sophisticated, you'll want to add tests for:
-
-* Permission checks
-* Invalid inputs
-* State transitions
-* Contract upgrades
-* Error handling
-
-The more critical the logic, the more valuable these tests become.
-
----
-
-## Setting Up GitHub Actions CI
-
-Running tests locally is useful.
-
-Running them automatically is even better.
-
-There have been multiple occasions where I was convinced everything worked perfectly, only for CI to tell me otherwise a few minutes later.
-
-Create a workflow file:
-
-```text
-.github/workflows/ci.yml
-```
-
-Add this configuration:
+Set up GitHub Actions for automated testing in `.github/workflows/ci.yml`:
 
 ```yaml
-name: Midnight Contract Tests
+name: CI Pipeline
 
 on:
   push:
-    branches:
-      - main
-
+    branches: [main, master]
   pull_request:
-    branches:
-      - main
+    branches: [main, master]
 
 jobs:
   test:
+    name: Test
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: "npm"
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm ci
 
-      - name: Run Tests
-        run: npm run test
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build library
+        run: npm run build
 ```
 
-The workflow is simple.
+## 7. Best Practices
 
-Whenever code is pushed or a pull request is opened, GitHub automatically:
+- **Test Isolation**: Always reset state between tests to prevent cross-test contamination
+- **Edge Case Coverage**: Test invalid inputs, boundary values, and failure modes
+- **Immutability**: Use deep cloning to prevent accidental state mutations
+- **CI/CD**: Automate testing to ensure regressions are caught early
+- **Documentation**: Maintain clear documentation of the testing framework and test cases
 
-1. Downloads the repository
-2. Installs Node.js
-3. Installs dependencies
-4. Runs the test suite
+## 8. Conclusion
 
-One small detail that's worth mentioning:
-
-Use `npm ci` instead of `npm install`.
-
-I learned that lesson after several frustrating CI failures caused by dependency mismatches.
-
-`npm ci` guarantees consistent installations based on your lock file.
-
-Since switching to it, my CI builds have been much more reliable.
-
----
-
-## What's Next?
-
-At this point, you already have a solid testing foundation.
-
-You can write contract logic locally, verify it using automated tests, and rely on GitHub Actions to catch issues before they reach production.
-
-But there's still plenty of room to expand this workflow.
-
-A few ideas worth exploring are:
-
-* Integration testing with local environments
-* Property-based testing
-* Fuzz testing
-* Coverage reporting
-* More advanced Compact contract simulations
-
-One thing I've noticed is that every contract project eventually develops its own testing style.
-
-The important part isn't having a perfect setup from day one.
-
-The important part is having a setup that makes testing easy enough that you'll actually do it.
-
----
-
-## Conclusion
-
-Testing was something I used to treat as an afterthought.
-
-Now it's one of the first things I set up whenever I start a new project.
-
-The reason is simple: debugging after deployment is always more painful than catching problems locally.
-
-By building a small simulator, writing automated tests, and connecting everything to GitHub Actions, you create a safety net that grows alongside your project.
-
-The examples in this guide are intentionally simple, but the same principles apply to much larger Compact contracts.
-
-Start small.
-
-Write tests early.
-
-Add more coverage as your contract evolves.
-
-Your future self will thank you for it.
-
-Happy coding, and see you on Midnight Network.
+This guide has provided a complete framework for testing Midnight Compact contracts. By implementing the simulator, comprehensive tests, and automated CI/CD pipeline, developers can significantly improve the reliability and security of their contracts. The methodologies outlined here can be extended to cover more complex contract logic and integration testing with local Midnight devnets.
